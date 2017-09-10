@@ -1,5 +1,6 @@
 //! Implementation of the Sun Ray Authentication Server.
 
+use std::fmt;
 use std::io;
 use std::str;
 
@@ -14,12 +15,28 @@ pub enum AuthMessageType {
     KeepAliveReq,
     DiscInf,
     ConnInf,
+    DiscRsp,
+    ConnRsp,
     Unknown,
 }
 
 impl Default for AuthMessageType {
     fn default() -> AuthMessageType {
         AuthMessageType::Unknown
+    }
+}
+
+impl fmt::Display for AuthMessageType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            AuthMessageType::InfoReq => write!(f, "infoReq"),
+            AuthMessageType::KeepAliveReq => write!(f, "keepAliveReq"),
+            AuthMessageType::DiscInf => write!(f, "discInf"),
+            AuthMessageType::ConnInf => write!(f, "connInf"),
+            AuthMessageType::DiscRsp => write!(f, "discRsp"),
+            AuthMessageType::ConnRsp => write!(f, "connRsp"),
+            _ => write!(f, "unknown"),
+        }
     }
 }
 
@@ -30,6 +47,8 @@ impl<'a> From<&'a str> for AuthMessageType {
             "keepAliveReq" => AuthMessageType::KeepAliveReq,
             "discInf" => AuthMessageType::DiscInf,
             "connInf" => AuthMessageType::ConnInf,
+            "discRsp" => AuthMessageType::DiscRsp,
+            "connRsp" => AuthMessageType::ConnRsp,
             _ => AuthMessageType::Unknown,
         }
     }
