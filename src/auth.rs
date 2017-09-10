@@ -56,28 +56,29 @@ impl<'a> From<&'a str> for AuthMessageType {
 
 #[derive(Clone, Debug, Default)]
 pub struct AuthMessage {
-    message_type: AuthMessageType,
-    mtu: Option<u32>,
-    barrier_level: Option<u64>,
-    cause: Option<String>,
-    client_rand: Option<String>,
-    ddc_config: Option<u32>,
-    event: Option<String>,
+    pub message_type: AuthMessageType,
+    pub mtu: Option<u32>,
+    pub barrier_level: Option<u64>,
+    pub cause: Option<String>,
+    pub client_rand: Option<String>,
+    pub ddc_config: Option<u32>,
+    pub event: Option<String>,
     // TODO: first_server is actually an ip address
-    first_server: Option<String>,
-    fw: Option<String>,
-    hw: Option<String>,
-    id: Option<String>,
-    init_state: Option<u32>,
-    key_types: Option<Vec<String>>,
-    namespace: Option<String>,
-    pn: Option<u32>,
+    pub first_server: Option<String>,
+    pub fw: Option<String>,
+    pub hw: Option<String>,
+    pub id: Option<String>,
+    pub init_state: Option<u32>,
+    pub key_types: Option<Vec<String>>,
+    pub namespace: Option<String>,
+    pub pn: Option<u32>,
     // TODO: real_ip is actually an ip address
-    real_ip: Option<String>,
-    sn: Option<String>,
-    state: Option<String>,
-    token_seq: Option<u32>,
-    type_: Option<String>,
+    pub real_ip: Option<String>,
+    pub sn: Option<String>,
+    pub state: Option<String>,
+    pub token_seq: Option<u32>,
+    pub type_: Option<String>,
+    pub access: Option<String>,
 }
 
 pub struct AuthCodec;
@@ -160,7 +161,21 @@ impl Encoder for AuthCodec {
     type Item = AuthMessage;
     type Error = io::Error;
 
-    fn encode(&mut self, _msg: AuthMessage, _buf: &mut BytesMut) -> Result<(), io::Error> {
+    fn encode(&mut self, msg: AuthMessage, buf: &mut BytesMut) -> Result<(), io::Error> {
+        let mut out = String::from(format!("{}", msg.message_type));
+
+        match msg.access {
+            Some(s) => out += format!(" access={}", s).as_str(),
+            None => {},
+        }
+
+        match msg.token_seq {
+            Some(s) => out += format!(" tokenSeq={}", s).as_str(),
+            None => {}
+        }
+
+        buf.extend(out.as_bytes());
+        buf.extend(b"\n");
         Ok(())
     }
 }
