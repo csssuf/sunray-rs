@@ -8,7 +8,7 @@ use std::u32;
 
 use bytes::BytesMut;
 use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::{Encoder, Decoder, Framed};
+use tokio_io::codec::{Decoder, Encoder, Framed};
 use tokio_proto::pipeline::ServerProto;
 
 #[derive(Copy, Clone, Debug)]
@@ -92,10 +92,10 @@ impl Decoder for AuthCodec {
             let line = buf.split_to(i);
             buf.split_to(1);
 
-            return match str::from_utf8(&line.as_ref()) {
+            return match str::from_utf8(line.as_ref()) {
                 Ok(s) => {
                     let mut out = AuthMessage::default();
-                    
+
                     let mut split_str = s.split_whitespace();
 
                     if let Some(message_type) = split_str.next() {
@@ -116,20 +116,27 @@ impl Decoder for AuthCodec {
 
                         match key {
                             "MTU" => out.mtu = Some(value.parse().expect("not an integer")),
-                            "barrierLevel" => out.barrier_level = Some(value.parse().expect("not an integer")),
+                            "barrierLevel" => {
+                                out.barrier_level = Some(value.parse().expect("not an integer"))
+                            }
                             "cause" => out.cause = Some(value.to_owned()),
                             "clientRand" => out.client_rand = Some(value.to_owned()),
-                            "ddcconfig" => out.ddc_config = Some(value.parse().expect("not an integer")),
+                            "ddcconfig" => {
+                                out.ddc_config = Some(value.parse().expect("not an integer"))
+                            }
                             "event" => out.event = Some(value.to_owned()),
                             "firstServer" => {
                                 // TODO: ipv6?
-                                let value = u32::from_str_radix(value, 16).expect("not a hex integer");
+                                let value =
+                                    u32::from_str_radix(value, 16).expect("not a hex integer");
                                 out.first_server = Some(IpAddr::V4(Ipv4Addr::from(value)))
                             }
                             "fw" => out.fw = Some(value.to_owned()),
                             "hw" => out.hw = Some(value.to_owned()),
                             "id" => out.id = Some(value.to_owned()),
-                            "initState" => out.init_state = Some(value.parse().expect("not an integer")),
+                            "initState" => {
+                                out.init_state = Some(value.parse().expect("not an integer"))
+                            }
                             "keyTypes" => {
                                 let key_type_list = value.split(',');
                                 let mut key_types = Vec::new();
@@ -144,12 +151,15 @@ impl Decoder for AuthCodec {
                             "pn" => out.pn = Some(value.parse().expect("not an integer")),
                             "realIP" => {
                                 // TODO: ipv6?
-                                let value = u32::from_str_radix(value, 16).expect("not a hex integer");
+                                let value =
+                                    u32::from_str_radix(value, 16).expect("not a hex integer");
                                 out.real_ip = Some(IpAddr::V4(Ipv4Addr::from(value)))
                             }
                             "sn" => out.sn = Some(value.to_owned()),
                             "state" => out.state = Some(value.to_owned()),
-                            "tokenSeq" => out.token_seq = Some(value.parse().expect("not an integer")),
+                            "tokenSeq" => {
+                                out.token_seq = Some(value.parse().expect("not an integer"))
+                            }
                             "type" => out.type_ = Some(value.to_owned()),
                             _ => {}
                         }
@@ -158,7 +168,7 @@ impl Decoder for AuthCodec {
                     Ok(Some(out))
                 }
                 Err(_) => Err(io::Error::new(io::ErrorKind::Other, "invalid string")),
-            }
+            };
         }
 
         Ok(None)
@@ -172,14 +182,12 @@ impl Encoder for AuthCodec {
     fn encode(&mut self, msg: AuthMessage, buf: &mut BytesMut) -> Result<(), io::Error> {
         let mut out = String::from(format!("{}", msg.message_type));
 
-        match msg.access {
-            Some(s) => out += format!(" access={}", s).as_str(),
-            None => {},
+        if let Some(access) = msg.access {
+            out += format!(" access={}", access).as_str();
         }
 
-        match msg.token_seq {
-            Some(s) => out += format!(" tokenSeq={}", s).as_str(),
-            None => {}
+        if let Some(token_seq) = msg.token_seq {
+            out += format!(" tokenSeq={}", token_seq).as_str();
         }
 
         buf.extend(out.as_bytes());
