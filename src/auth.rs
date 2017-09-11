@@ -2,7 +2,9 @@
 
 use std::fmt;
 use std::io;
+use std::net::{IpAddr, Ipv4Addr};
 use std::str;
+use std::u32;
 
 use bytes::BytesMut;
 use tokio_io::{AsyncRead, AsyncWrite};
@@ -63,8 +65,7 @@ pub struct AuthMessage {
     pub client_rand: Option<String>,
     pub ddc_config: Option<u32>,
     pub event: Option<String>,
-    // TODO: first_server is actually an ip address
-    pub first_server: Option<String>,
+    pub first_server: Option<IpAddr>,
     pub fw: Option<String>,
     pub hw: Option<String>,
     pub id: Option<String>,
@@ -72,8 +73,7 @@ pub struct AuthMessage {
     pub key_types: Option<Vec<String>>,
     pub namespace: Option<String>,
     pub pn: Option<u32>,
-    // TODO: real_ip is actually an ip address
-    pub real_ip: Option<String>,
+    pub real_ip: Option<IpAddr>,
     pub sn: Option<String>,
     pub state: Option<String>,
     pub token_seq: Option<u32>,
@@ -121,7 +121,11 @@ impl Decoder for AuthCodec {
                             "clientRand" => out.client_rand = Some(value.to_owned()),
                             "ddcconfig" => out.ddc_config = Some(value.parse().expect("not an integer")),
                             "event" => out.event = Some(value.to_owned()),
-                            "firstServer" => out.first_server = Some(value.to_owned()),
+                            "firstServer" => {
+                                // TODO: ipv6?
+                                let value = u32::from_str_radix(value, 16).expect("not a hex integer");
+                                out.first_server = Some(IpAddr::V4(Ipv4Addr::from(value)))
+                            }
                             "fw" => out.fw = Some(value.to_owned()),
                             "hw" => out.hw = Some(value.to_owned()),
                             "id" => out.id = Some(value.to_owned()),
@@ -138,7 +142,11 @@ impl Decoder for AuthCodec {
                             }
                             "namespace" => out.namespace = Some(value.to_owned()),
                             "pn" => out.pn = Some(value.parse().expect("not an integer")),
-                            "realIP" => out.real_ip = Some(value.to_owned()),
+                            "realIP" => {
+                                // TODO: ipv6?
+                                let value = u32::from_str_radix(value, 16).expect("not a hex integer");
+                                out.real_ip = Some(IpAddr::V4(Ipv4Addr::from(value)))
+                            }
                             "sn" => out.sn = Some(value.to_owned()),
                             "state" => out.state = Some(value.to_owned()),
                             "tokenSeq" => out.token_seq = Some(value.parse().expect("not an integer")),
