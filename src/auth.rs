@@ -11,20 +11,22 @@ use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Decoder, Encoder, Framed};
 use tokio_proto::pipeline::ServerProto;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum AuthMessageType {
     InfoReq,
     KeepAliveReq,
+    KeepAliveCnf,
     DiscInf,
-    ConnInf,
     DiscRsp,
+    ConnInf,
     ConnRsp,
     Unknown,
+    Empty,
 }
 
 impl Default for AuthMessageType {
     fn default() -> AuthMessageType {
-        AuthMessageType::Unknown
+        AuthMessageType::Empty
     }
 }
 
@@ -33,10 +35,12 @@ impl fmt::Display for AuthMessageType {
         match *self {
             AuthMessageType::InfoReq => write!(f, "infoReq"),
             AuthMessageType::KeepAliveReq => write!(f, "keepAliveReq"),
+            AuthMessageType::KeepAliveCnf => write!(f, "keepAliveCnf"),
             AuthMessageType::DiscInf => write!(f, "discInf"),
-            AuthMessageType::ConnInf => write!(f, "connInf"),
             AuthMessageType::DiscRsp => write!(f, "discRsp"),
+            AuthMessageType::ConnInf => write!(f, "connInf"),
             AuthMessageType::ConnRsp => write!(f, "connRsp"),
+            AuthMessageType::Empty => write!(f, "empty"),
             _ => write!(f, "unknown"),
         }
     }
@@ -47,9 +51,10 @@ impl<'a> From<&'a str> for AuthMessageType {
         match s {
             "infoReq" => AuthMessageType::InfoReq,
             "keepAliveReq" => AuthMessageType::KeepAliveReq,
+            "keepAliveCnf" => AuthMessageType::KeepAliveCnf,
             "discInf" => AuthMessageType::DiscInf,
-            "connInf" => AuthMessageType::ConnInf,
             "discRsp" => AuthMessageType::DiscRsp,
+            "connInf" => AuthMessageType::ConnInf,
             "connRsp" => AuthMessageType::ConnRsp,
             _ => AuthMessageType::Unknown,
         }
@@ -180,6 +185,10 @@ impl Encoder for AuthCodec {
     type Error = io::Error;
 
     fn encode(&mut self, msg: AuthMessage, buf: &mut BytesMut) -> Result<(), io::Error> {
+        if msg.message_type == AuthMessageType::Empty {
+            return Ok(());
+        }
+
         let mut out = String::from(format!("{}", msg.message_type));
 
         if let Some(access) = msg.access {
